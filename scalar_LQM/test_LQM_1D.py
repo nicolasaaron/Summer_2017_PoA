@@ -45,7 +45,7 @@ params ={   'b1'      : 1.,
             'sT'      : 0.,
             # discretization parameters
             'T'       : 1,
-            't_step'  : 0.0001,
+            't_step'  : 0.001,
             # simulation
             'N_simulate' : 100000
         }

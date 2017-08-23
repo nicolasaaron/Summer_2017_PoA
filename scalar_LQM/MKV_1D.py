@@ -21,6 +21,7 @@ import FBSDE_1D
 import Riccati_1D
 from scipy.stats import norm
 import matplotlib.pyplot as plt
+import time
 
 
 #
@@ -72,9 +73,11 @@ bar_eta_MKV = Riccati_1D.Riccati_1D((d_t-a_t)/2. , -b_t, -c_t, e_T, T, t)
 #%%
 plt.figure()
 plt.plot(bar_mu_t_MKV)
+plt.title('bar_mu')
 
 plt.figure()
 plt.plot(bar_eta_MKV)
+plt.title('bar_eta')
 
 # %% find the optimal strategy path coeffcient " eta_t" and "chi_t"
 # parameters for the FBSDE
@@ -94,22 +97,25 @@ control_coef_MKV = FBSDE_1D.control_fun(dyn_a_t, dyn_b_t, dyn_c_t, dyn_d_t, dyn_
 #%%
 plt.figure()
 plt.plot(control_coef_MKV['eta'])
+plt.title('eta')
 
 plt.figure()
 plt.plot(control_coef_MKV['chi'])
-
+plt.title('chi')
 
 # %% simulate a trajectory of X_t
 np.random.seed(seed = 0)
 
 dW_t = norm.rvs(loc=0, scale=sigma * np.sqrt(t_step), size=n_step)
+
 X_t = np.zeros(n_step,dtype=float)
 X_t[0] = X0
 for i in range(1,n_step,1):
     X_t[i] = X_t[i-1] + ((dyn_a_t + dyn_b_t *control_coef_MKV['eta'][i-1]) * X_t[i-1] \
                           + dyn_b_t * control_coef_MKV['chi'][i-1] + dyn_c_t[i-1]) * t_step \
              + dW_t[i-1]
-    
+             
+
 alpha_t = opt_control(X_t,control_coef_MKV['eta'], control_coef_MKV['chi'], - b2 / rt )
 
 # simulated running cost
@@ -118,32 +124,37 @@ f_t = .5 * (qt * X_t**2 + bar_qt * (X_t - st * bar_mu_t_MKV)**2 + rt * alpha_t**
 g_T   = .5 * (qT * X_t[-1]**2 + bar_qT * (X_t[-1] - sT * bar_mu_t_MKV[-1])**2 )
 # sample value function in w.r.t. time
 sample_v_t = (np.sum(f_t[:-1]) - np.insert(np.cumsum(f_t[:-1]),0,0) )*t_step + g_T
-             
+            
 
 # express X_t as OU-process
+
 tilde_Xt = np.zeros(n_step,dtype = float)
 tilde_Xt[0] = X0
 temp_sum = np.insert(np.cumsum( (dyn_a_t + dyn_b_t * bar_eta_MKV[:-1]) * t_step),0,0)
 for i in range(1,n_step,1):
-    tilde_Xt[i] = bar_mu_t_MKV[i] + np.sum( np.exp(temp_sum[i] - temp_sum[:i]) * dW_t[:i] )
+    tilde_Xt[i] = bar_mu_t_MKV[i] + np.sum( np.exp(temp_sum[i] - temp_sum[:(i-1)]) * dW_t[:(i-1)] )
 
 #%% debug plot sample strategy
 plt.figure()
 plt.plot(np.cumsum(dW_t),color='r')
-plt.plot(X_t)
+plt.title('brownian path')
+
+plt.plot(X_t,color='blue')
 plt.plot(tilde_Xt, color='green', linewidth = 0.5)
 
 
 plt.figure()
 plt.plot(alpha_t)
+plt.title('alpha')
 
 plt.figure()
 plt.plot(f_t)
+plt.title('f_t')
 
 plt.figure()
 plt.plot(sample_v_t)
 plt.axhline(y=g_T,xmin=0,xmax=T,c="blue",linewidth=0.5,zorder=0)
-
+plt.title('sample_v_t')
 #%% compute the value function by simulation
 
 N_simulate = 100000
@@ -152,6 +163,8 @@ v_t_sim_MKV = np.zeros(n_step)
 
 #simulate bronian motions
 dW_t = norm.rvs(loc=0, scale=sigma * np.sqrt(t_step), size=[N_simulate,n_step])
+
+#simulate Xt
 X_t = np.zeros([N_simulate,n_step],dtype=float)
 X_t[:,0] = X0
 
@@ -159,8 +172,11 @@ for i in range(1,n_step,1):
     X_t[:,i] = X_t[:,i-1] + ((dyn_a_t + dyn_b_t *control_coef_MKV['eta'][i-1]) * X_t[:,i-1] \
                           + dyn_b_t * control_coef_MKV['chi'][i-1] + dyn_c_t[i-1]) * t_step \
             + dW_t[:,i-1]
-    
-alpha_t_MKV = opt_control(X_t,control_coef_MKV['eta'], control_coef_MKV['chi'], - b2 / rt )    
+
+#compute optimal strategy
+alpha_t_MKV = opt_control(X_t,control_coef_MKV['eta'], control_coef_MKV['chi'], - b2 / rt )
+
+
 # simulated running cost
 f_t = .5 * (qt * X_t**2 + bar_qt * (X_t - st * bar_mu_t_MKV)**2 + rt * alpha_t_MKV**2)
 # terminal cost
@@ -170,18 +186,20 @@ temp = np.insert(np.cumsum(f_t[:,:-1], axis=1),0,0, axis = 1)
 sample_v_t =  (temp[:,-1].reshape(N_simulate,1) - temp)*t_step + g_T.reshape(N_simulate,1)
 
 v_t_sim_MKV = np.sum(sample_v_t / N_simulate ,axis = 0)
-    
 
 #%% test dynamic process X_t
 plt.figure()
 plt.plot(np.sum(X_t/N_simulate,axis=0),color='blue')
 plt.plot(bar_mu_t_MKV, color = 'red')
-
-print('value function by simulation: {:.10f}'.format(v_t_sim_MKV[0]))
-#print('value function by formula: {:.10f}'.format(v_0))
+plt.title('bar_mu & sim_Xt_mu')
 
 plt.figure()
 plt.plot(t,v_t_sim_MKV)
+plt.titel('v_t_sim_MKV')
 #plt.axhline(y=v_0,xmin=0,xmax=1,c="blue",linewidth=0.5,zorder=0)
+
+
+print('value function by simulation: {:.10f}'.format(v_t_sim_MKV[0]))
+#print('value function by formula: {:.10f}'.format(v_0))
 
                    

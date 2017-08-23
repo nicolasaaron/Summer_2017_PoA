@@ -26,9 +26,9 @@ def load_data(filename):
 #%%
 param_name = 'rt'
 
-min_rt = 0.1
-max_rt = 50
-step = 0.1
+min_rt = 0.002
+max_rt = 1
+step = 0.002
 test_parameter = np.arange(min_rt, max_rt, step)
 N_test = len(test_parameter)
 
@@ -106,9 +106,9 @@ plt.title('PoA')
 
 
 #%%
-flag_save_data = True
+flag_save_data = False
 if flag_save_data:
-    filename = 'PoA_'+param_name+'_01_50.dat'
+    filename = 'PoA_'+param_name+'_0002_1.dat'
     data = {'param_name':param_name,
             'MFG':list_MFG,
             'MKV':list_MKV,
