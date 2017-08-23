@@ -12,11 +12,11 @@ test_LQM_1D.py : test the class LQM_1D
 
 impact_alpha_coef.py	: compute the PoA w.r.t. different coefficients ('b2', and 'rt')
 						  
-						  results are saved into 
-						  'PoA_XX_01_50.dat' files, the range of parameters is 0.1 -- 50, with step 0.1
-						  'PoA_XX_0002_1.dat' files, the range of parameters is 0.002 -- 1, with step 0.002
-						  
-						  The simulation time range is [0,1] with step 0.001
+results are saved into 
+'PoA_XX_01_50.dat' files, the range of parameters is 0.1 -- 50, with step 0.1
+'PoA_XX_0002_1.dat' files, the range of parameters is 0.002 -- 1, with step 0.002
+
+The simulation time range is [0,1] with step 0.001
 						  
 						  
 	
